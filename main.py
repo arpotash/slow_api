@@ -4,6 +4,16 @@ from slow_api.wsgi import SlowApi
 from slow_api.view import BasedView
 
 
+class SendMessage(BasedView):
+
+    def post(self, request) -> Response:
+        title = request.body['title']
+        text = request.body['text']
+        email = request.body['email']
+        content = {'title': title, 'text': text, 'email': email}
+        return Response(status=201, json=content)
+
+
 class MyFirstView(BasedView):
 
     def post(self, request):
@@ -15,6 +25,8 @@ class MyFirstView(BasedView):
 
 urls = [
     Url('/homepage/page/<str:name>', MyFirstView),
+    Url('/homepage', MyFirstView),
+    Url('/contacts', SendMessage)
 ]
 
 app = SlowApi(urls)

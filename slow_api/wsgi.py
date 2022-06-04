@@ -1,3 +1,4 @@
+import json
 from typing import Union, Any
 
 from slow_api.request import Request
@@ -14,9 +15,12 @@ class SlowApi:
         request = Request(environ)
         view = self._get_view(request)
         response = self._get_response(request, view)
-        if bool(response):
-            start_response(str(response.status), list(response.headers.items()))
-            return [response.json.encode()]
+        start_response(str(response.status), list(response.headers.items() if response.headers else {}))
+        if isinstance(response.json, dict):
+            call_response = json.dumps(response.json).encode('utf-8')
+        else:
+            call_response = response.json.encode('utf-8')
+        return [call_response]
 
     def _get_view(self, request: Request) -> Union[BasedView, None]:
         """
@@ -30,7 +34,7 @@ class SlowApi:
             is_url_match = url_matcher._get_match_url(path)
             if is_url_match:
                 return url.view
-            return None
+        return None
 
     def _get_response(self, request: Request, view: BasedView) -> Any:
         """
@@ -39,6 +43,6 @@ class SlowApi:
         :param view: url view function
         :return: response as a result of the view
         """
-        if hasattr(view, request.method):
+        if view.__dict__.get(request.method, False):
             return getattr(view, request.method)(view, request)
-        return "Метод не поддерживается"
+        raise KeyError("Метод не поддерживается")
